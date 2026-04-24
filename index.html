@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+ <title>URBEX CORE — premium private urbex planner beta+</title>
+ <meta name="description" content="URBEX CORE beta+: premium private urbex maps, routes, crew planning, import, backups en slimme tripflow in één lichte statische testapp.">
+ <meta name="theme-color" content="#0f172a">
+ <meta name="robots" content="noindex,nofollow">
+ <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+ <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+ <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+ <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+     <link rel="stylesheet" href="app.css">
+
+</head>
+<body>
+<div class="app">
+ <div id="map"></div>
+ <div id="onboardingOverlay" class="onboardingOverlay">
+  <div class="onboardingCard">
+   <div class="onboardingKicker">URBEX CORE</div>
+   <h2 class="onboardingTitle">Jouw urbex cockpit, maar dan strak en helder</h2>
+   <div class="onboardingText">Deze premium look verandert niets aan je logica. Import, route-optimalisatie, ETA, crewbeheer, notities en spots langs de route blijven volledig behouden — alleen de presentatie voelt nu veel sterker.</div>
+   <div class="onboardingGrid">
+    <button id="onboardingAddBtn" class="onboardingBtn onboardingBtnAccent" type="button"><strong>Voeg eerste locatie toe</strong><span>Zet direct een pin op de kaart of plak coördinaten in de editor.</span></button>
+    <button id="onboardingImportBtn" class="onboardingBtn" type="button"><strong>Importeer bestaande spots</strong><span>JSON, GPX, KML, KMZ, CSV of GeoJSON blijven ondersteund.</span></button>
+    <button id="onboardingRouteBtn" class="onboardingBtn" type="button"><strong>Start met een route</strong><span>Importeer een route en zie meteen afstand, reistijd en spots binnen 1.5 km.</span></button>
+   </div>
+   <div class="onboardingFooter">
+    <span class="hintSmall">Je kunt dit scherm altijd overslaan en later alle tools openen via Meer.</span>
+    <button id="onboardingSkipBtn" class="onboardingGhost" type="button">Direct naar kaart</button>
+   </div>
+  </div>
+ </div>
+ <div id="modeBanner" class="modeBanner">Klik op de kaart om een nieuwe locatie te plaatsen.</div>
+ <div id="betaTestBanner" class="betaTestBanner">
+  <div class="betaBannerText">
+   <strong>BETA TESTBUILD</strong>
+   <span id="betaBannerMeta">Browser-opslag actief · maak geregeld een JSON-backup</span>
+  </div>
+  <div class="betaBannerActions">
+   <span id="betaVersionBadge" class="betaVersionBadge">v9.3.6 beta+</span>
+   <button id="betaExportBtn" class="betaBannerBtn" type="button">Backup exporteren</button>
+  </div>
+ </div>
+
+ <button id="liveTrackBtn" class="liveTrackFab" type="button" aria-label="Live volgen starten" title="Live volgen starten">Live uit</button>
+ <button id="mobileAddFab" class="mobileAddFab" type="button" aria-label="Nieuwe locatie toevoegen" title="Nieuwe locatie toevoegen">＋ Locatie</button>
+
+ <aside class="sidebar mobile-collapsed">
+ <div id="mobileSheetHandle" class="mobileSheetHandle">
+  <div class="mobileSheetGrip"></div>
+  <div class="mobileSheetTitleWrap">
+   <div class="mobileSheetTitle">URBEX CORE</div>
+   <div id="mobileSheetSubtitle" class="mobileSheetSubtitle">Kaart, route en details</div>
+  </div>
+  <button id="mobileSheetToggleBtn" class="mobileSheetClose" type="button" aria-label="Paneel openen of sluiten">Open</button>
+ </div>
+ <div class="sidebarScroll">
+ <div class="topbar">
+ <div class="appHeader appHeaderSimple">
+ <div class="appHeaderRow">
+<div class="appBrandText">
+   <div class="appEyebrowSolid">Private urbex planner</div>
+   <h1 class="appTitleSingle">URBEX CORE</h1>
+     </div>
+  <div id="appHeaderStatusBadge" class="appHeaderStatus"><span class="syncDot"></span>Beta+ testbuild</div>
+ </div>
+ </div>
+ <div class="searchbar">
+ <span style="font-size:18px;">📍</span>
+ <input id="searchInput" placeholder="Zoek een locatie of plak coördinaten / Google Maps-link">
+ <button id="searchBtn" class="searchBtn" title="Zoeken">Zoek</button>
+ <button id="locateBtn" class="locateBtn" title="Mijn locatie" aria-label="Mijn locatie">📍</button>
+ </div>
+ <div class="searchHint">Zoek op naam of categorie, of plak direct coördinaten / een Google Maps-link. Voorbeeld: <strong>49.19223, -0.30636</strong>.</div>
+ <div class="heroPromise">
+  <div class="heroPromiseTitle">Private urbex maps, routes en crewbeheer in één kaart</div>
+  <div class="heroPromiseText">URBEX CORE geeft je één rustige cockpit voor spots, routevolgorde, ETA, notities en extra locaties langs je route — zonder dat het hoofdscherm overvol voelt.</div>
+  <div class="heroPromiseTags">
+   <span class="tag tagAccent">Browser-opslag</span>
+   <span class="tag">Hosting-ready</span>
+   <span class="tag">+ Spots binnen 1.5 km</span>
+   <span class="tag tagAccent">Laptop testmodus</span>
+   <span class="tag">Beta 9.2 prep</span>
+   <button id="homeSetupBtn" class="heroHomeSetupBtn" type="button">Thuis instellen</button>
+  </div>
+ </div>
+ <div class="primaryActionRow">
+  <button id="primaryAddBtn" class="primaryActionBtn primaryActionBtnAccent" type="button">＋ Nieuwe locatie</button>
+  <button id="primaryPlanRouteBtn" class="primaryActionBtn" type="button">🧭 Plan route</button>
+  <button id="primaryMoreBtn" class="primaryActionBtn" type="button">☰ Meer</button>
+ </div>
+ <div id="productHealthPanel" class="healthPanel">
+  <div class="healthPanelHeader">
+   <div>
+    <div class="healthPanelTitle">Beta readiness-overzicht</div>
+    <div class="healthPanelSub">Direct zien of je statische testsite, backupflow, crewrechten en route-opslag klaar zijn voor persoonlijke en gesloten online tests.</div>
+   </div>
+   <div id="productHealthPill" class="healthPanelPill">Live status</div>
+  </div>
+  <div id="productHealthGrid" class="healthGrid"></div>
+  <div class="betaTrustStrip">
+   <strong>Beta+ testpositie:</strong> geschikt voor persoonlijke/gesloten tests met lokale browser-opslag. Voor verkoop/abonnement later nog echte backend, cloudsync, betaalflow en productie-auth koppelen.
+  </div>
+ </div>
+ <div id="backupReminderCard" class="backupReminderCard" hidden>
+  <div class="backupReminderHead">
+   <div>
+    <div class="backupReminderTitle">Backup-advies voor deze beta</div>
+    <div id="backupReminderMeta" class="backupReminderMeta">Nog geen backup gemaakt in deze browser.</div>
+   </div>
+   <span class="backupReminderPill">JSON</span>
+  </div>
+  <div class="backupReminderActions">
+   <button id="backupNowBtn" class="btn btnPrimary" type="button">Nu backup exporteren</button>
+   <button id="backupDismissBtn" class="btn btnSoft" type="button">Later</button>
+  </div>
+ </div>
+ 
+ <div id="controlShelf" class="controlShelf" hidden>
+  <div class="controlShelfHeader">
+   <div>
+    <div class="controlShelfTitle">Meer acties & beheer</div>
+    <div class="controlShelfSub">Alle bestaande functies blijven beschikbaar, maar zitten hier rustiger gegroepeerd.</div>
+   </div>
+  </div>
+  <div class="metaRow">
+   <span class="tag tagAccent" id="countTag">0 zichtbaar</span>
+   <span class="tag" id="beTag" style="display:none"></span>
+   <span class="tag" id="frTag" style="display:none"></span>
+   <span class="tag" id="luTag" style="display:none"></span>
+   <span class="tag" id="routeTag">Geen route</span>
+  </div>
+  <div class="toolRow toolRowDesktopExport">
+   <button id="exportBtn" class="toolBtn" type="button">Export backup</button>
+   <button id="importBtn" class="toolBtn" type="button"><span class="btnWordTop">Import</span><span class="btnWordBottom">locaties</span></button>
+   <button id="myMapsExportBtn" class="toolBtn desktopOnlyLaptop" type="button" title="Export per rubriek voor Google My Maps">Export My Maps</button>
+   <button id="clearMapBtn" class="toolBtn toolBtnDanger" type="button">Kaart leegmaken</button>
+  </div>
+  <div class="mapStyleRow" id="mapStyleRow">
+   <button id="mapStyleSatelliteBtn" class="mapStyleBtn" type="button">Satelliet</button>
+   <button id="mapStyleMapBtn" class="mapStyleBtn" type="button">Kaart</button>
+  </div>
+  <div id="filterBar" class="filterBar"></div>
+ 
+ <div id="teamAdminCard" class="teamAdminCard">
+  <div class="teamAdminHeader">
+   <div>
+    <h3 class="teamAdminTitle">Crew-beheer voor laptop & hostingtest</h3>
+    <div class="teamAdminSub">Voeg hier mensen toe aan jouw gedeelde kaart. Alleen de owner beheert leden en rollen. Dit blok blijft bewust uit de telefoonversie zodat rechten en toegangsbeheer rustig getest kunnen worden vanaf laptop of vaste hosting.</div>
+   </div>
+   <div class="teamAdminOwnerBadge">Lokaal beheer</div>
+  </div>
+  <div class="teamAdminStatus"><strong>Account en workspace</strong><br>Test hier lokaal registreren, inloggen, wachtwoord wijzigen en je workspace-id. Alles blijft in deze browser opgeslagen totdat je later een eigen backend koppelt.</div>
+  <div class="teamInviteGrid">
+   <div class="field">
+    <label for="workspaceIdInput">Workspace id</label>
+    <input id="workspaceIdInput" placeholder="Bijv. urbex-core-test">
+   </div>
+   <div class="field">
+    <label for="workspaceLabelInput">Workspace naam</label>
+    <input id="workspaceLabelInput" placeholder="Bijv. Gedeelde kaart Roy">
+   </div>
+   <div class="field full">
+    <label for="authDisplayNameInput">Jouw naam</label>
+    <input id="authDisplayNameInput" placeholder="Bijv. Roy Janssen">
+   </div>
+   <div class="field">
+    <label for="authEmailInput">Login e-mail</label>
+    <input id="authEmailInput" type="email" placeholder="naam@voorbeeld.nl">
+   </div>
+   <div class="field">
+    <label for="authPasswordInput">Wachtwoord</label>
+    <input id="authPasswordInput" type="password" placeholder="Minimaal 6 tekens">
+   </div>
+  </div>
+  <div class="teamInviteActionRow authActionStack">
+   <button id="workspaceSaveBtn" class="toolBtn" type="button">Workspace opslaan</button>
+   <button id="authRegisterBtn" class="toolBtn" type="button">Registreren</button>
+   <button id="authLoginBtn" class="toolBtn" type="button">Inloggen</button>
+   <button id="authResetBtn" class="toolBtn" type="button">Reset mail</button>
+   <button id="authLogoutBtn" class="toolBtn" type="button">Uitloggen</button>
+  </div>
+  <div id="authStatusBox" class="teamAdminStatus"><strong>Lokale testmodus.</strong><br><strong>Statische testmodus.</strong><br>Nog niet ingelogd. Vul een workspace-id in en log lokaal in om crew, routes en locaties in deze browser te beheren.</div>
+ <div id="teamOwnerOnlyWrap">
+   <div class="teamAdminStatus"><strong>Ownergegevens</strong><br>Vul hier de naam en het e-mailadres van de eigenaar in. Deze owner staat daarna bovenaan in de crewlijst.</div>
+   <div class="teamInviteGrid">
+    <div class="field">
+     <label for="teamOwnerNameInput">Owner naam</label>
+     <input id="teamOwnerNameInput" placeholder="Bijv. Jouw naam">
+    </div>
+    <div class="field">
+     <label for="teamOwnerEmailInput">Owner e-mail</label>
+     <input id="teamOwnerEmailInput" placeholder="naam@voorbeeld.nl">
+    </div>
+   </div>
+   <div class="teamInviteActionRow">
+    <button id="teamOwnerSaveBtn" class="toolBtn" type="button">Owner opslaan</button>
+   </div>
+   <div class="teamInviteHint">Handig als iemand deze kaart overneemt: de owner kan zijn eigen gegevens hier zelf aanpassen zonder de layout te veranderen.</div>
+   <div class="teamAdminGrid">
+    <div class="field">
+     <label for="teamInviteNameInput">Voornaam</label>
+     <input id="teamInviteNameInput" placeholder="Bijv. Roy">
+    </div>
+    <div class="field">
+     <label for="teamInviteEmailInput">E-mail van lid</label>
+     <input id="teamInviteEmailInput" placeholder="naam@voorbeeld.nl">
+    </div>
+    <div class="field">
+     <label for="teamInviteRoleSelect">Rol</label>
+<div class="helperText">Je kunt hier alleen <strong>Editor</strong> of <strong>Viewer</strong> kiezen. Owner blijft exclusief.</div>
+     <select id="teamInviteRoleSelect">
+      <option value="editor">Editor</option>
+      <option value="viewer">Viewer</option>
+     </select>
+    </div>
+    <button id="teamInviteBtn" class="btn btnPrimary teamAdminAddBtn" type="button">＋ Lid toevoegen</button>
+   </div>
+   <div class="teamAdminInfoRow">
+    <span class="teamAdminInfoChip">Owner kan toevoegen en verwijderen</span>
+    <span class="teamAdminInfoChip">Editor mag locaties toevoegen en bewerken</span>
+    <span class="teamAdminInfoChip">Viewer mag alleen meekijken</span>
+   </div>
+   <div id="teamAdminStatus" class="teamAdminStatus">Nog geen actie uitgevoerd.</div>
+   <div id="teamMemberList" class="teamMemberList"></div>
+  </div>
+ </div>
+
+ </div>
+
+ </div>
+
+ <div class="selected">
+ <div class="selectedHeader">
+  <div class="selectedHeading">
+   <div id="selectionLabel" class="label">Overzicht</div>
+   <div class="selectedTitleRow">
+    <h1 id="selectedTitle" class="title">Nog geen locatie geselecteerd</h1>
+    <button id="editModeBtn" class="btn btnSoft selectedEditToggle" type="button">Bewerken</button>
+   </div>
+   <div id="selectedMeta" class="muted">Importeer een bestand of voeg je eerste locatie toe.</div>
+  </div>
+ </div>
+
+ <div id="selectedInfoPanel" class="selectedInfoPanel">
+  <div id="selectedPhotos" class="selectedPhotos"></div>
+  <div id="selectedNotes" class="selectedNotes" style="display:none;"></div>
+  <div class="actions">
+   <a id="routeBtn" class="btn btnPrimary" target="_blank" rel="noreferrer">↗ Start route</a>
+   <button id="overviewEditBtn" class="btn btnSoft" type="button">✎ Details</button>
+   <button id="addLocationBtn" class="btn btnSoft" type="button">＋ Nieuwe locatie</button>
+  </div>
+  <div class="selectedUtilityRow">
+   <button id="routeImportBtn" class="mapStyleBtn routeImportAccent" type="button">Route importeren</button>
+  </div>
+ </div>
+
+ <div id="statusBox" class="statusBox info" style="display:block;">Je kaart is klaar voor laptop- en hostingtests. Werk je met echte data, exporteer dan geregeld een JSON-backup.</div>
+ <div id="quickStartCard" class="quickStartCard">
+  <div class="quickStartTitle">Beta slim starten</div>
+  <div class="quickStartText">Bewaar spots, plan een route en navigeer zonder ruis. Deze beta draait nu volledig op browser-opslag, dus exporteer geregeld een backup als je tussen laptop, browser of webhosting wisselt.</div>
+  <div class="quickStartSteps">
+   <div class="quickStartStep"><strong>1</strong><span>Importeer locaties uit JSON, GPX, KML, KMZ, CSV of GeoJSON.</span></div>
+   <div class="quickStartStep"><strong>2</strong><span>Zoek op naam of plak direct coördinaten / een Maps-link.</span></div>
+   <div class="quickStartStep"><strong>3</strong><span>Bewaar notities, categorie en foto's per locatie.</span></div>
+  </div>
+  <div class="quickStartActions">
+   <button id="emptyImportBtn" class="btn btnPrimary" type="button">Importeer locaties</button>
+   <button id="emptyAddBtn" class="btn btnSoft" type="button">Voeg eerste locatie toe</button>
+   <button id="emptyRouteBtn" class="btn btnPrimary" type="button">Route importeren</button>
+  </div>
+ </div>
+ <div id="routeSummaryBox" class="routeSummaryBox"></div>
+
+ <div id="detailModeSwitch" class="detailModeSwitch">
+  <button id="overviewModeBtn" class="detailModeBtn active" type="button">Overzicht</button>
+  <button id="editModeSwitchBtn" class="detailModeBtn" type="button">Bewerken</button>
+ </div>
+
+ <div id="editorPanel" class="editor">
+ <div class="editorTitle">
+ <div>
+  <h3 id="editorTitleText">Locatie bewerken</h3>
+  <span id="editorHintText" class="hintSmall">Pas naam, categorie, notities en foto's aan zonder de kaart uit het oog te verliezen.</span>
+ </div>
+ </div>
+
+ <div class="field">
+ <label for="nameInput">Naam</label>
+ <input id="nameInput" placeholder="Bijv. Villa Example">
+ </div>
+
+ <div class="field">
+ <label for="coordsInput">Pin / coördinaten</label>
+ <input id="coordsInput" placeholder="49.19223, -0.30636 of een Maps-link">
+ <div class="helperText">Plak coördinaten of een Google Maps-link. Bij toevoegen kun je ook gewoon op de kaart tikken.</div>
+ </div>
+
+ <div class="hiddenCoordRow" aria-hidden="true" style="display:none;">
+ <input id="latInput" type="hidden">
+ <input id="lngInput" type="hidden">
+ </div>
+
+ <div class="field" id="categoryFieldWrap">
+ <div id="autoCategoryBar" class="autoCategoryBar">
+  <div class="autoCategoryBarText"><strong>Standaard:</strong> nieuwe locaties gaan automatisch naar <strong>Onderweg</strong>.</div>
+  <button id="toggleCategoryOverrideBtn" class="toolBtn" type="button">Zelf rubriek kiezen</button>
+ </div>
+ <div id="categoryManualWrap">
+  <label for="categoryInput">Categorie</label>
+  <input id="categoryInput" list="categoryOptionsList" placeholder="Bijv. Verlaten huizen, Fabrieken of Checken">
+  <datalist id="categoryOptionsList"></datalist>
+  <div class="categoryManageRow">
+   <button id="addCategoryBtn" class="toolBtn" type="button">＋ Nieuwe rubriek</button>
+   <button id="applyCategoryBtn" class="toolBtn" type="button">↪ Verplaats hierheen</button>
+   <button id="renameCategoryBtn" class="toolBtn" type="button">✎ Hernoem</button>
+   <button id="deleteCategoryBtn" class="toolBtn toolBtnDanger" type="button">🗑 Verwijder</button>
+  </div>
+  <div id="categoryChooser" class="categoryChooser" aria-hidden="true">
+   <div class="categoryChooserTitle">Bestaande rubrieken</div>
+   <div id="categoryChooserList" class="categoryChooserList"></div>
+   <div class="helperText">Klik op een bestaande rubriek om haar meteen in het veld te zetten. Typ bovenaan een nieuwe naam en klik daarna nog eens op <strong>Nieuwe rubriek</strong> om haar aan te maken.</div>
+  </div>
+  <div class="helperText">Typ of maak eerst een rubriek. Klik daarna op <strong>Verplaats hierheen</strong> om de geselecteerde locatie direct in die rubriek te zetten.</div>
+ </div>
+ <div id="categoryAutoHint" class="categoryAutoHint">Je hoeft bij snel toevoegen niets te kiezen. Nieuwe locaties worden standaard in <strong>Onderweg</strong> gezet. Alleen als jij zelf op <strong>Zelf rubriek kiezen</strong> klikt, kun je een andere rubriek instellen.</div>
+ </div>
+
+ <div class="field">
+ <label for="notesInput">Opmerkingen</label>
+ <textarea id="notesInput" rows="4" placeholder="Eigen notities, toegang, risico, bijzonderheden..."></textarea>
+ </div>
+
+ <div class="field">
+ <label for="photoInput">Foto's uit bestanden</label>
+ <input id="photoInput" type="file" accept="image/*" multiple>
+ <div id="photoGrid" class="photoGrid"></div>
+ </div>
+
+ <div class="saveRow">
+ <button id="saveLocationBtn" class="btn btnPrimary" type="button">Wijzigingen opslaan</button>
+ <button id="cancelAddBtn" class="btn btnSoft" type="button">Annuleer toevoegen</button>
+ <button id="deleteLocationBtn" class="btn btnDanger" type="button">Verwijder locatie</button>
+ </div>
+ 
+ </div>
+ </div>
+
+ <div class="listWrap">
+ <h2 id="listTitle" class="sectionTitle">Locaties</h2>
+ <div id="listSub" class="sectionSub" style="display:none;"></div>
+ <div id="list" class="list"></div>
+ </div>
+ </div>
+ </aside>
+
+ <input id="routeFile" type="file" accept=".gpx,.kml,.kmz,.geojson,.json,application/xml,text/xml,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,application/geo+json,application/json" hidden>
+ <input id="importFile" type="file" accept=".json,.geojson,.gpx,.kml,.kmz,.csv,application/json,application/geo+json,text/csv,application/gpx+xml,application/xml,text/xml,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz" hidden>
+ <div id="toast" class="toast" role="status" aria-live="polite"></div>
+ <div id="confirmOverlay" class="confirmOverlay" aria-hidden="true">
+  <div class="confirmDialog" role="dialog" aria-modal="true" aria-labelledby="confirmClearTitle" aria-describedby="confirmClearText">
+   <h2 id="confirmClearTitle" class="confirmDialogTitle">Kaart leegmaken</h2>
+   <div id="confirmClearText" class="confirmDialogText">Alle locaties worden verwijderd, weet je dit zeker? Kies Ja om de kaart opnieuw leeg te maken of Nee om alles te laten staan.</div>
+   <div class="confirmDialogActions">
+    <button id="confirmClearYesBtn" class="btn btnDanger" type="button">Ja</button>
+    <button id="confirmClearNoBtn" class="btn btnSoft" type="button">Nee</button>
+   </div>
+  </div>
+ </div>
+</div>
+
+<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script defer src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script defer src="app.js"></script>
+</body>
+</html>
