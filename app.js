@@ -1152,6 +1152,14 @@ function applyRoleDrivenUi() {
   const el = document.getElementById(id);
   if (!el) return;
   el.classList.toggle('roleHidden', !show);
+  if (!show) el.setAttribute('aria-hidden', 'true');
+  else el.removeAttribute('aria-hidden');
+ }
+ const toggleElementHidden = (el, show) => {
+  if (!el) return;
+  el.classList.toggle('roleHidden', !show);
+  if (!show) el.setAttribute('aria-hidden', 'true');
+  else el.removeAttribute('aria-hidden');
  }
  const setReadonly = (id, readonly) => {
   const el = document.getElementById(id);
@@ -1163,10 +1171,18 @@ function applyRoleDrivenUi() {
 
  ['primaryAddBtn','addLocationBtn','emptyAddBtn','mobileAddFab','onboardingAddBtn','editModeBtn','overviewEditBtn','editModeSwitchBtn'].forEach((id) => toggleHidden(id, canAdd || canEdit));
  ['exportBtn','importBtn','myMapsExportBtn','clearMapBtn','emptyImportBtn','onboardingImportBtn'].forEach((id) => toggleHidden(id, canExport || canImportLocations));
+ ['betaExportBtn','backupNowBtn'].forEach((id) => toggleHidden(id, canExport));
  ['routeImportBtn','emptyRouteBtn','onboardingRouteBtn','primaryPlanRouteBtn','routeBtn'].forEach((id) => toggleHidden(id, canImportRoute));
  ['homeSetupBtn','addCategoryBtn','applyCategoryBtn','renameCategoryBtn','deleteCategoryBtn'].forEach((id) => toggleHidden(id, canManageHome || canManageCategories));
  toggleHidden('deleteLocationBtn', canDelete && !addMode && !!getSelected());
  toggleHidden('saveLocationBtn', canEdit || canAdd);
+
+ const backupReminderCard = document.getElementById('backupReminderCard');
+ if (backupReminderCard && !canExport) backupReminderCard.hidden = true;
+ toggleElementHidden(backupReminderCard, canExport);
+ document.querySelectorAll('.toolRowDesktopExport').forEach((el) => toggleElementHidden(el, canExport || canImportLocations));
+ const viewerReadOnly = !(canAdd || canEdit || canDelete || canManageCategories || canImportLocations || canImportRoute || canExport || canManageHome);
+ document.body.classList.toggle('viewerReadOnlyMode', viewerReadOnly);
 
  ['nameInput','coordsInput','categoryInput','notesInput'].forEach((id) => setReadonly(id, !canEdit));
  const photoInput = document.getElementById('photoInput');
@@ -4448,7 +4464,7 @@ function renderProductHealthPanel() {
  const cards = [
   { kicker:'Testscore', value:readiness.scoreLabel, hint:readiness.hint },
   { kicker:'Modus', value:workspace.label, hint:workspace.hint },
-  { kicker:'Backup', value:backupLabel.label, hint:backupLabel.hint },
+  ...(currentRoleAllows('exportData') ? [{ kicker:'Backup', value:backupLabel.label, hint:backupLabel.hint }] : []),
   { kicker:'Jouw rol', value:teamRoleLabel(role), hint:getRoleSummaryHint(role) },
   { kicker:'Crew', value:String(crewCount), hint:`${getActiveWorkspaceLabel()} · ${crewCount === 1 ? 'solo' : 'gedeeld'}` },
   { kicker:'Locaties', value:String(locations.length), hint:`${categoryCount} rubrieken in kaart` },
@@ -6799,20 +6815,26 @@ updateLiveTrackButtonState();
 document.getElementById('exportBtn').addEventListener('click', exportLocationsBackup);
 const myMapsExportBtn = document.getElementById('myMapsExportBtn');
 if (myMapsExportBtn) myMapsExportBtn.addEventListener('click', exportMyMapsLayers);
-document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+document.getElementById('importBtn').addEventListener('click', () => {
+ if (!requireRolePermission('importLocations', 'Jouw rol mag geen locaties importeren.')) return;
+ document.getElementById('importFile').click();
+});
 document.getElementById('importFile').addEventListener('change', (e) => {
  const file = e.target.files && e.target.files[0];
- if (file) importLocationsBackup(file);
+ if (file && requireRolePermission('importLocations', 'Jouw rol mag geen locaties importeren.')) importLocationsBackup(file);
  e.target.value = '';
 });
-document.getElementById('routeImportBtn').addEventListener('click', () => document.getElementById('routeFile').click());
+document.getElementById('routeImportBtn').addEventListener('click', () => {
+ if (!requireRolePermission('importRoute', 'Jouw rol mag geen route importeren.')) return;
+ document.getElementById('routeFile').click();
+});
 const teamInviteBtn = document.getElementById('teamInviteBtn');
 if (teamInviteBtn) teamInviteBtn.addEventListener('click', addTeamMemberFromUi);
 const teamOwnerSaveBtn = document.getElementById('teamOwnerSaveBtn');
 if (teamOwnerSaveBtn) teamOwnerSaveBtn.addEventListener('click', saveOwnerProfileFromUi);
 document.getElementById('routeFile').addEventListener('change', (e) => {
  const file = e.target.files && e.target.files[0];
- if (file) loadRoute(file);
+ if (file && requireRolePermission('importRoute', 'Jouw rol mag geen route importeren.')) loadRoute(file);
  e.target.value = '';
 });
 function beginAddLocationFlow(preferredCategory='') {
@@ -7042,6 +7064,12 @@ function renderBackupReminder() {
  const meta = document.getElementById('backupReminderMeta');
  const bannerMeta = document.getElementById('betaBannerMeta');
  const badge = document.getElementById('betaVersionBadge');
+ if (!currentRoleAllows('exportData')) {
+  if (card) card.hidden = true;
+  if (bannerMeta) bannerMeta.textContent = 'Browser-opslag actief · viewer read-only';
+  if (badge) badge.textContent = APP_BUILD_VERSION;
+  return;
+ }
  if (badge) badge.textContent = APP_BUILD_VERSION;
  const hasData = (Array.isArray(locations) && locations.length > 0)
   || !!(routeData && Array.isArray(routeData.points) && routeData.points.length > 1)
@@ -7103,7 +7131,7 @@ function dismissOnboarding() {
 
 
 window.URBEX_CORE_STATIC_PREP = {
- version: '2026-04-24-beta-9.3-plus',
+ version: '2026-04-24-beta-9.3-viewer-lockdown',
  getContext() {
   return {
    ...getPreparedWorkspaceContext(),
